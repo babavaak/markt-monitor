@@ -19,6 +19,7 @@
     --green:#22c55e;--red:#ef4444;--blue:#3b82f6;--violet:#a78bfa;--amber:#eab308;
   }
   *{margin:0;padding:0;box-sizing:border-box}
+  button,select,.sumrow,.card{touch-action:manipulation}
   html,body{height:100%;background:var(--bg);color:var(--text);
     font-family:'SF Mono','JetBrains Mono','Fira Code',Consolas,monospace}
   body{display:flex;flex-direction:column;min-height:100vh}
@@ -106,9 +107,11 @@
   .sumc.pos{color:var(--green)} .sumc.neg{color:var(--red)} .sumc.dim{color:var(--text4)}
 
   /* MODAL */
-  #ov{display:none;position:fixed;inset:0;background:rgba(8,10,15,.92);z-index:200;
-    align-items:center;justify-content:center;backdrop-filter:blur(5px)}
+  #ov{display:none;position:fixed;inset:0;background:rgba(8,10,15,.95);z-index:200;
+    align-items:center;justify-content:center}
   #ov.open{display:flex}
+  body.modal-open{overflow:hidden}
+  body.modal-open #wrap{overflow:hidden}
   #modal{background:var(--bg2);border:1px solid var(--border2);border-radius:11px;
     width:min(96vw,1100px);height:min(92dvh,820px);display:flex;flex-direction:column;overflow:hidden;
     box-shadow:0 24px 90px rgba(0,0,0,.85)}
@@ -229,6 +232,7 @@ const GROUPS=[
 ];
 const ASSETS=GROUPS.flatMap(g=>g.assets.map(a=>({...a,grp:g.name})));
 const SRC={td:'Twelve Data',yf:'Yahoo'};
+const SHORT={'LVWC.DE':'World 2x','TQQQ':'Nasdaq 3x','URTH':'MSCI World €','QQQ':'Nasdaq 100','BTC/USD':'Bitcoin','ETH/USD':'Ethereum','SOL/USD':'Solana'};
 
 /* Proxy-Pool nur für die 2 Hebel-ETFs. Jeder Eintrag weiß, wie er den Roh-Text liefert. */
 const PROXIES=[
@@ -370,7 +374,7 @@ function sparkline(closes, smaPeriod){
 function buildSummary(){
   const rows=ASSETS.map(a=>{const id=cid(a.ticker);
     return `<div class="sumrow" onclick="openModal('${a.ticker}')">
-      <span class="sum-name"><span class="d" style="background:${a.color}"></span><span>${a.name}</span></span>
+      <span class="sum-name"><span class="d" style="background:${a.color}"></span><span>${SHORT[a.ticker]||a.name}</span></span>
       <span class="sumc dim" id="sum-${id}-d1">·</span>
       <span class="sumc dim" id="sum-${id}-sma">·</span>
       <span class="sumc dim" id="sum-${id}-ath">·</span></div>`;}).join('');
@@ -508,12 +512,13 @@ function openModal(ticker){
   document.getElementById('mtitle').textContent=aAsset.name;
   document.getElementById('msub').textContent=aAsset.ticker+' · '+aAsset.grp;
   document.getElementById('ov').classList.add('open');
+  document.body.classList.add('modal-open');
   const ovl=document.getElementById('moverlay');
   if(cache[aAsset.ticker]){ovl.classList.remove('show');renderModal();}
   else{ovl.innerHTML='<div class="spin"></div><span class="ovmsg">Lade Verlauf…</span>';ovl.classList.add('show');
     loadAsset(aAsset).then(ok=>{if(!ok)ovl.innerHTML='<div class="overr">Daten konnten nicht geladen werden.<br>Anderen Hebel-Proxy wählen oder erneut versuchen.</div>';});}
 }
-function closeModal(){document.getElementById('ov').classList.remove('open');if(mChart){mChart.destroy();mChart=null}}
+function closeModal(){document.getElementById('ov').classList.remove('open');document.body.classList.remove('modal-open');if(mChart){mChart.destroy();mChart=null}}
 document.getElementById('ov').addEventListener('click',e=>{if(e.target.id==='ov')closeModal()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 function setRange(r,btn){aRange=r;document.querySelectorAll('.rbtn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderModal()}
